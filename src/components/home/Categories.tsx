@@ -102,9 +102,9 @@ export default function Categories() {
                         {category.name}
                       </h3>
 
-                      <p className="mt-2 max-w-sm text-sm leading-6 text-[#777D74]">
-                        {category.description}
-                      </p>
+                        <p className="mt-2 max-w-sm text-sm leading-6 text-[#777D74]">
+                          {category.description}
+                        </p>
                     </div>
 
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#DED9CD] text-[#173D32] transition-all group-hover:border-[#173D32] group-hover:bg-[#173D32] group-hover:text-white">
@@ -112,9 +112,9 @@ export default function Categories() {
                     </div>
                   </div>
 
-                  <p className="mt-5 text-[10px] font-semibold tracking-[0.16em] text-[#A47B48]">
-                    {category.count.toUpperCase()}
-                  </p>
+                    <p className="mt-5 text-[10px] font-semibold tracking-[0.16em] text-[#A47B48]">
+                      {category.count.toUpperCase()}
+                    </p>
                 </div>
               </Link>
             );

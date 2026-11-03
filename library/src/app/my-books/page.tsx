@@ -1,10 +1,10 @@
-
 "use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 import {
   Pencil,
   Trash2,
@@ -42,15 +42,10 @@ export default function MyBooksPage() {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:5000/books", {
-        cache: "no-store",
+      const data = await apiRequest("/books", {
+        next: { revalidate: 60 },
       });
 
-      if (!response.ok) {
-        throw new Error("Could not load books.");
-      }
-
-      const data = await response.json();
       const allBooks: Book[] = Array.isArray(data)
         ? data
         : data.books || [];
@@ -116,28 +111,18 @@ export default function MyBooksPage() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(
-        `http://localhost:5000/books/${editingBook._id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: editingBook.title.trim(),
-            author: editingBook.author.trim(),
-            category: editingBook.category,
-            totalCopies: editingBook.totalCopies,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not update this book.");
-      }
+      await apiRequest(`/books/${editingBook._id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editingBook.title.trim(),
+          author: editingBook.author.trim(),
+          category: editingBook.category,
+          totalCopies: editingBook.totalCopies,
+        }),
+      });
 
       toast.success("Book updated successfully!");
       setEditingBook(null);
@@ -164,21 +149,12 @@ export default function MyBooksPage() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(
-        `http://localhost:5000/books/${deletingBook._id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not delete this book.");
-      }
+      await apiRequest(`/books/${deletingBook._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setBooks((currentBooks) =>
         currentBooks.filter((book) => book._id !== deletingBook._id)

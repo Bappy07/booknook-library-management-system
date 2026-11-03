@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 import {
   BookOpen,
   CalendarDays,
@@ -80,34 +80,23 @@ export default function MyBorrowsPage() {
         Authorization: `Bearer ${token}`,
       };
 
-      const [borrowResponse, bookResponse] = await Promise.all([
-        fetch("http://localhost:5000/borrows", {
+      const [borrowData, bookData] = await Promise.all([
+        apiRequest("/borrows", {
           headers,
           cache: "no-store",
         }),
-        fetch("http://localhost:5000/books", {
+        apiRequest("/books", {
           cache: "no-store",
         }),
       ]);
-
-      if (!borrowResponse.ok) {
-        throw new Error("Could not load your borrowing records.");
-      }
-
-      const borrowData = await borrowResponse.json();
 
       const borrowList = Array.isArray(borrowData)
         ? borrowData
         : borrowData.borrows || [];
 
-      let books: Book[] = [];
-
-      if (bookResponse.ok) {
-        const bookData = await bookResponse.json();
-        books = Array.isArray(bookData)
-          ? bookData
-          : bookData.books || [];
-      }
+      const books: Book[] = Array.isArray(bookData)
+        ? bookData
+        : bookData.books || [];
 
       const enrichedBorrows: Borrow[] = borrowList.map(
         (item: {
@@ -184,21 +173,12 @@ export default function MyBorrowsPage() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(
-        `http://localhost:5000/borrows/${selectedBorrow._id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not return this book.");
-      }
+      await apiRequest(`/borrows/${selectedBorrow._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setBorrows((current) =>
         current.map((borrow) =>

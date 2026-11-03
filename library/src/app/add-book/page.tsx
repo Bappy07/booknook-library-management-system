@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 import {
   BookPlus,
   ImagePlus,
@@ -64,11 +64,10 @@ export default function AddBookPage() {
         );
       }
 
-      // Send book data to Express backend
-      const response = await fetch("http://localhost:5000/books", {
+      // Send book data to the configured backend
+      const result = await apiRequest("/books", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${data.token}`,
         },
         body: JSON.stringify({
@@ -80,12 +79,6 @@ export default function AddBookPage() {
           description,
         }),
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to add book.");
-      }
 
       toast.success("Book added successfully!");
 

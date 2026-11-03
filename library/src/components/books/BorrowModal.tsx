@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X, BookOpen } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 
 type Props = {
@@ -50,22 +50,15 @@ export default function BorrowModal({ bookId, title, image }: Props) {
         throw new Error("Authentication failed. Please login again.");
       }
 
-      const response = await fetch("http://localhost:5000/borrows", {
+      await apiRequest("/borrows", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           bookId,
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not borrow this book.");
-      }
 
       toast.success("Book borrowed successfully!");
 

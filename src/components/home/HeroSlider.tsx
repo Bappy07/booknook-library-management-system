@@ -123,13 +123,13 @@ export default function HeroSlider() {
           <ChevronLeft size={20} />
         </button>
 
-        <button
-          onClick={() => swiper?.slideNext()}
-          aria-label="Next slide"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 text-white transition hover:bg-white hover:text-[#173D32]"
-        >
-          <ChevronRight size={20} />
-        </button>
+            <button
+              onClick={() => swiper?.slideNext()}
+              aria-label="Next slide"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 text-white transition hover:bg-white hover:text-[#173D32]"
+            >
+              <ChevronRight size={20} />
+            </button>
       </div>
     </section>
   );

@@ -1,9 +1,10 @@
-﻿
+
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -12,15 +13,15 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLoading(true);
 
     const form = new FormData(event.currentTarget);
-
     const email = String(form.get("email")).trim();
     const password = String(form.get("password"));
 
@@ -44,13 +45,30 @@ export default function LoginPage() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+
+      if (error) {
+        setError(String(error.message || "Google login failed."));
+        setGoogleLoading(false);
+      }
+    } catch {
+      setError("Unable to connect with Google. Please try again.");
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-[85vh] grid md:grid-cols-2 bg-[#F6F3EB]">
-
-      {/* Login Form */}
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-
           <Link href="/" className="flex items-center gap-2 mb-8">
             <BookOpen className="text-[#173D32]" size={30} />
             <span className="text-2xl font-bold text-[#173D32]">
@@ -70,13 +88,27 @@ export default function LoginPage() {
             Continue your reading journey with BookNook.
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading || loading}
+            className="w-full h-12 bg-white border border-[#DED9CD] text-[#173D32] rounded-lg font-medium flex items-center justify-center gap-3 hover:bg-[#FDFCF9] transition disabled:opacity-60"
+          >
+            <span className="text-xl font-bold text-[#4285F4]">G</span>
+            {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+          </button>
 
+          <div className="flex items-center gap-4 my-6">
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+            <span className="text-sm text-[#777D74]">OR</span>
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-sm font-medium mb-2">
                 Email Address
               </label>
-
               <input
                 name="email"
                 type="email"
@@ -90,7 +122,6 @@ export default function LoginPage() {
               <label className="block text-sm font-medium mb-2">
                 Password
               </label>
-
               <input
                 name="password"
                 type="password"
@@ -106,13 +137,12 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full h-12 bg-[#173D32] text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#245343] transition disabled:opacity-60"
             >
               {loading ? "Signing In..." : "Sign In"}
               {!loading && <ArrowRight size={18} />}
             </button>
-
           </form>
 
           <p className="text-center text-sm text-[#777D74] mt-7">
@@ -124,13 +154,10 @@ export default function LoginPage() {
               Create Account
             </Link>
           </p>
-
         </div>
       </div>
 
-      {/* Right Image */}
       <div className="hidden md:block relative min-h-[650px]">
-
         <Image
           src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&q=90"
           alt="Beautiful library interior"
@@ -143,7 +170,6 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[#173D32]/70" />
 
         <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
-
           <p className="text-[#D7B783] uppercase tracking-[4px] text-sm mb-4">
             Read. Discover. Share.
           </p>
@@ -156,11 +182,8 @@ export default function LoginPage() {
             Discover stories, explore knowledge, and find your next
             favorite book with BookNook.
           </p>
-
         </div>
       </div>
-
     </div>
   );
 }
-

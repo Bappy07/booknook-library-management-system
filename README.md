@@ -33,6 +33,13 @@ Both frontend and backend are maintained in one GitHub repository, inside separa
 **Main Repository:** [BookNook on GitHub](https://github.com/Bappy07/booknook-library-management-system)
 
 ---
+### Authentication Requirements
+
+- Users must log in before adding a new book.
+- Users must log in before borrowing a book.
+- Only authenticated users can access protected features.
+- Guests can browse the available books without logging in.
+- ---
 
 ## ✨ Features
 

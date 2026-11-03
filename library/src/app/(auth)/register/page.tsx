@@ -1,4 +1,4 @@
-
+﻿
 "use client";
 
 import Link from "next/link";
@@ -43,7 +43,7 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        setError(error.message);
+        setError(String(error.message || "Registration failed. Please try again."));
         return;
       }
 
@@ -193,3 +193,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

@@ -21,7 +21,6 @@ export default function LoginPage() {
     setLoading(true);
 
     const form = new FormData(event.currentTarget);
-
     const email = String(form.get("email")).trim();
     const password = String(form.get("password"));
 
@@ -32,7 +31,7 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError(error.message ?? "Login failed. Please try again.");
+        setError(String(error.message || "Login failed. Please try again."));
         return;
       }
 
@@ -47,7 +46,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[85vh] grid md:grid-cols-2 bg-[#F6F3EB]">
-      {/* Login Form */}
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <Link href="/" className="flex items-center gap-2 mb-8">
@@ -74,7 +72,6 @@ export default function LoginPage() {
               <label className="block text-sm font-medium mb-2">
                 Email Address
               </label>
-
               <input
                 name="email"
                 type="email"
@@ -88,7 +85,6 @@ export default function LoginPage() {
               <label className="block text-sm font-medium mb-2">
                 Password
               </label>
-
               <input
                 name="password"
                 type="password"
@@ -124,7 +120,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Image */}
       <div className="hidden md:block relative min-h-[650px]">
         <Image
           src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&q=90"

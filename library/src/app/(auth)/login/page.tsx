@@ -1,4 +1,4 @@
-
+﻿
 "use client";
 
 import Link from "next/link";
@@ -31,7 +31,7 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError(error.message);
+        setError(String(error.message || "Login failed. Please try again."));
         return;
       }
 
@@ -163,3 +163,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

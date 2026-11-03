@@ -4,7 +4,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -15,7 +14,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+  async function handleRegister(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
     setError("");
 
@@ -48,7 +49,9 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        setError(error.message ?? "Registration failed. Please try again.");
+        setError(
+          String(error.message || "Registration failed. Please try again.")
+        );
         return;
       }
 
@@ -171,8 +174,8 @@ export default function RegisterPage() {
           alt="Books and a cozy reading space"
           fill
           priority
-          className="object-cover"
           unoptimized
+          className="object-cover"
         />
 
         <div className="absolute inset-0 bg-[#173D32]/70" />

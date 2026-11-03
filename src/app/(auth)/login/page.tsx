@@ -13,6 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -44,6 +45,26 @@ export default function LoginPage() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+
+      if (error) {
+        setError(String(error.message || "Google login failed."));
+        setGoogleLoading(false);
+      }
+    } catch {
+      setError("Unable to connect with Google. Please try again.");
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-[85vh] grid md:grid-cols-2 bg-[#F6F3EB]">
       <div className="flex items-center justify-center px-6 py-12">
@@ -66,6 +87,22 @@ export default function LoginPage() {
           <p className="text-[#777D74] mb-7">
             Continue your reading journey with BookNook.
           </p>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading || loading}
+            className="w-full h-12 bg-white border border-[#DED9CD] text-[#173D32] rounded-lg font-medium flex items-center justify-center gap-3 hover:bg-[#FDFCF9] transition disabled:opacity-60"
+          >
+            <span className="text-xl font-bold text-[#4285F4]">G</span>
+            {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+          </button>
+
+          <div className="flex items-center gap-4 my-6">
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+            <span className="text-sm text-[#777D74]">OR</span>
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+          </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
@@ -100,7 +137,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full h-12 bg-[#173D32] text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#245343] transition disabled:opacity-60"
             >
               {loading ? "Signing In..." : "Sign In"}

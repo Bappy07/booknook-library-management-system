@@ -4,6 +4,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -12,11 +13,10 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleRegister(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -63,6 +63,26 @@ export default function RegisterPage() {
     }
   }
 
+  async function handleGoogleRegister() {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+
+      if (error) {
+        setError(String(error.message || "Google registration failed."));
+        setGoogleLoading(false);
+      }
+    } catch {
+      setError("Unable to connect with Google. Please try again.");
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-[85vh] grid md:grid-cols-2 bg-[#F6F3EB]">
       <div className="flex items-center justify-center px-6 py-12">
@@ -85,6 +105,22 @@ export default function RegisterPage() {
           <p className="text-[#777D74] mb-7">
             Start discovering your next favorite book.
           </p>
+
+          <button
+            type="button"
+            onClick={handleGoogleRegister}
+            disabled={googleLoading || loading}
+            className="w-full h-12 bg-white border border-[#DED9CD] text-[#173D32] rounded-lg font-medium flex items-center justify-center gap-3 hover:bg-[#FDFCF9] transition disabled:opacity-60"
+          >
+            <span className="text-xl font-bold text-[#4285F4]">G</span>
+            {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+          </button>
+
+          <div className="flex items-center gap-4 my-6">
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+            <span className="text-sm text-[#777D74]">OR</span>
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+          </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
@@ -148,7 +184,7 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full h-12 bg-[#173D32] text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#245343] transition disabled:opacity-60"
             >
               {loading ? "Creating Account..." : "Create Account"}

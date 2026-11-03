@@ -6,6 +6,7 @@ import {
   BookOpen,
   SlidersHorizontal,
 } from "lucide-react";
+import { apiRequest } from "@/lib/api";
 
 type Book = {
   _id: string;
@@ -28,17 +29,10 @@ type BooksPageProps = {
 const categories = ["All", "Fiction", "Science", "History", "Kids", "Others"];
 
 async function getBooks(): Promise<Book[]> {
-  const response = await fetch("http://localhost:5000/books", {
+  const data = await apiRequest("/books", {
     cache: "no-store",
   });
 
-  if (!response.ok) {
-    throw new Error("Could not load books from the server.");
-  }
-
-  const data = await response.json();
-
-  // Supports either an array or an object containing a books array.
   return Array.isArray(data) ? data : data.books || [];
 }
 
@@ -46,11 +40,12 @@ export default async function BooksPage({
   searchParams,
 }: BooksPageProps) {
   const params = await searchParams;
-
   const query = params.q?.trim().toLowerCase() || "";
+
   const category = categories.includes(params.category || "")
     ? params.category || "All"
     : "All";
+
   const sort = params.sort || "newest";
 
   let books: Book[] = [];
@@ -88,7 +83,6 @@ export default async function BooksPage({
 
   return (
     <div className="min-h-screen bg-[#F6F3EB]">
-      {/* Hero */}
       <section className="bg-[#173D32] px-5 py-20 md:px-8 md:py-28">
         <div className="mx-auto max-w-7xl">
           <p className="mb-5 text-xs font-semibold tracking-[0.25em] text-[#C49A62]">
@@ -111,9 +105,7 @@ export default async function BooksPage({
         </div>
       </section>
 
-      {/* Books */}
       <section className="mx-auto max-w-7xl px-5 py-16 md:px-8">
-        {/* Filters */}
         <form
           action="/books"
           method="GET"
@@ -125,7 +117,6 @@ export default async function BooksPage({
                 size={19}
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-[#777D74]"
               />
-
               <input
                 type="search"
                 name="q"
@@ -186,7 +177,6 @@ export default async function BooksPage({
           </div>
         </form>
 
-        {/* Results */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold tracking-[0.2em] text-[#A47B48]">
@@ -207,7 +197,6 @@ export default async function BooksPage({
           </p>
         </div>
 
-        {/* API Error */}
         {loadingError ? (
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] px-6 py-20 text-center">
             <BookOpen
@@ -221,7 +210,7 @@ export default async function BooksPage({
             </h3>
 
             <p className="mt-3 text-sm text-[#777D74]">
-              Please check that your backend server is running and try again.
+              Please check the connection and try again.
             </p>
 
             <Link
@@ -232,7 +221,6 @@ export default async function BooksPage({
             </Link>
           </div>
         ) : filteredBooks.length > 0 ? (
-          /* Book Grid */
           <div className="grid grid-cols-1 gap-x-7 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
             {filteredBooks.map((book) => (
               <article key={book._id} className="group">

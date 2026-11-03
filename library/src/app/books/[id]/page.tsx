@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import BorrowModal from "@/components/books/BorrowModal";
+import { apiRequest } from "@/lib/api";
 
 type Book = {
   _id: string;
@@ -24,24 +25,22 @@ async function getBook(id: string): Promise<Book | null> {
     return null;
   }
 
-  const response = await fetch(
-    `http://localhost:5000/books/${id}`,
-    {
+  try {
+    const book = await apiRequest(`/books/${id}`, {
       cache: "no-store",
+    });
+
+    return book || null;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message.includes("404") || error.message.includes("400"))
+    ) {
+      return null;
     }
-  );
 
-  if (response.status === 404 || response.status === 400) {
-    return null;
-  }
-
-  if (!response.ok) {
     throw new Error("Failed to load book details.");
   }
-
-  const book = await response.json();
-
-  return book || null;
 }
 
 export default async function BookDetails({ params }: Props) {

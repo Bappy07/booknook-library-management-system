@@ -4,6 +4,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -12,11 +13,10 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleRegister(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -27,8 +27,14 @@ export default function RegisterPage() {
     const image = String(form.get("image")).trim();
     const password = String(form.get("password"));
 
-    if (password.length < 6 || !/[A-Z]/.test(password) || !/[a-z]/.test(password)) {
-      setError("Password needs 6 characters, one uppercase and one lowercase letter.");
+    if (
+      password.length < 6 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password)
+    ) {
+      setError(
+        "Password needs 6 characters, one uppercase and one lowercase letter."
+      );
       return;
     }
 
@@ -43,7 +49,9 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        setError(error.message);
+        setError(
+          String(error.message || "Registration failed. Please try again.")
+        );
         return;
       }
 
@@ -55,12 +63,30 @@ export default function RegisterPage() {
     }
   }
 
+  async function handleGoogleRegister() {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+
+      if (error) {
+        setError(String(error.message || "Google registration failed."));
+        setGoogleLoading(false);
+      }
+    } catch {
+      setError("Unable to connect with Google. Please try again.");
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-[85vh] grid md:grid-cols-2 bg-[#F6F3EB]">
-
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-
           <Link href="/" className="flex items-center gap-2 mb-8">
             <BookOpen className="text-[#173D32]" size={30} />
             <span className="text-2xl font-bold text-[#173D32]">
@@ -80,8 +106,23 @@ export default function RegisterPage() {
             Start discovering your next favorite book.
           </p>
 
-          <form onSubmit={handleRegister} className="space-y-4">
+          <button
+            type="button"
+            onClick={handleGoogleRegister}
+            disabled={googleLoading || loading}
+            className="w-full h-12 bg-white border border-[#DED9CD] text-[#173D32] rounded-lg font-medium flex items-center justify-center gap-3 hover:bg-[#FDFCF9] transition disabled:opacity-60"
+          >
+            <span className="text-xl font-bold text-[#4285F4]">G</span>
+            {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+          </button>
 
+          <div className="flex items-center gap-4 my-6">
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+            <span className="text-sm text-[#777D74]">OR</span>
+            <div className="h-px flex-1 bg-[#DED9CD]" />
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">
                 Full Name
@@ -143,22 +184,23 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full h-12 bg-[#173D32] text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#245343] transition disabled:opacity-60"
             >
               {loading ? "Creating Account..." : "Create Account"}
               {!loading && <ArrowRight size={18} />}
             </button>
-
           </form>
 
           <p className="text-center text-sm text-[#777D74] mt-7">
             Already have an account?{" "}
-            <Link href="/login" className="font-semibold text-[#173D32] hover:underline">
+            <Link
+              href="/login"
+              className="font-semibold text-[#173D32] hover:underline"
+            >
               Sign in
             </Link>
           </p>
-
         </div>
       </div>
 
@@ -168,8 +210,8 @@ export default function RegisterPage() {
           alt="Books and a cozy reading space"
           fill
           priority
-          className="object-cover"
           unoptimized
+          className="object-cover"
         />
 
         <div className="absolute inset-0 bg-[#173D32]/70" />
@@ -189,7 +231,6 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
-
     </div>
   );
 }

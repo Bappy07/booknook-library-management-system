@@ -1,0 +1,16 @@
+$kind: http-request
+name: Update Book
+description: ""
+url: https://booknook-api-puk1.onrender.com/books/6ae9707b815d26b38ff43eb0
+method: PATCH
+headers:
+  Authorization: Bearer YOUR_TOKEN
+  Content-Type: application/json
+body:
+  type: json
+  content: |
+    {
+      "title": "The Alchemist - Updated",
+      "totalCopies": 8
+    }
+order: 1000

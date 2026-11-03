@@ -5,7 +5,10 @@ import {
   ArrowRight,
   BookOpen,
   SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { apiRequest } from "@/lib/api";
 
 type Book = {
   _id: string;
@@ -17,29 +20,43 @@ type Book = {
   createdAt?: string;
 };
 
+type BooksResponse = {
+  books: Book[];
+  totalBooks: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+};
+
 type BooksPageProps = {
   searchParams: Promise<{
     q?: string;
     category?: string;
     sort?: string;
+    page?: string;
   }>;
 };
 
 const categories = ["All", "Fiction", "Science", "History", "Kids", "Others"];
+const BOOKS_PER_PAGE = 6;
 
-async function getBooks(): Promise<Book[]> {
-  const response = await fetch("http://localhost:5000/books", {
-    cache: "no-store",
+async function getBooks(
+  page: number,
+  query: string,
+  category: string,
+  sort: string
+): Promise<BooksResponse> {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    limit: String(BOOKS_PER_PAGE),
+    q: query,
+    category,
+    sort,
   });
 
-  if (!response.ok) {
-    throw new Error("Could not load books from the server.");
-  }
-
-  const data = await response.json();
-
-  // Supports either an array or an object containing a books array.
-  return Array.isArray(data) ? data : data.books || [];
+  return apiRequest(`/books?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
 }
 
 export default async function BooksPage({
@@ -47,48 +64,58 @@ export default async function BooksPage({
 }: BooksPageProps) {
   const params = await searchParams;
 
-  const query = params.q?.trim().toLowerCase() || "";
+  const query = params.q?.trim() || "";
+
   const category = categories.includes(params.category || "")
     ? params.category || "All"
     : "All";
-  const sort = params.sort || "newest";
 
-  let books: Book[] = [];
+  const sort = ["newest", "title", "author"].includes(params.sort || "")
+    ? params.sort || "newest"
+    : "newest";
+
+  const requestedPage = Number(params.page || 1);
+  const page =
+    Number.isInteger(requestedPage) && requestedPage > 0
+      ? requestedPage
+      : 1;
+
+  let data: BooksResponse = {
+    books: [],
+    totalBooks: 0,
+    totalPages: 0,
+    currentPage: page,
+    limit: BOOKS_PER_PAGE,
+  };
+
   let loadingError = false;
 
   try {
-    books = await getBooks();
+    data = await getBooks(page, query, category, sort);
   } catch (error) {
     console.error("Books API error:", error);
     loadingError = true;
   }
 
-  const filteredBooks = books.filter((book) => {
-    const matchesSearch =
-      book.title?.toLowerCase().includes(query) ||
-      book.author?.toLowerCase().includes(query);
+  const books = data.books || [];
+  const totalBooks = data.totalBooks || 0;
+  const totalPages = data.totalPages || 0;
+  const currentPage = data.currentPage || page;
 
-    const matchesCategory =
-      category === "All" || book.category === category;
+  function getPageUrl(pageNumber: number) {
+    const params = new URLSearchParams();
 
-    return matchesSearch && matchesCategory;
-  });
+    if (query) params.set("q", query);
+    if (category !== "All") params.set("category", category);
+    if (sort !== "newest") params.set("sort", sort);
 
-  if (sort === "title") {
-    filteredBooks.sort((a, b) => a.title.localeCompare(b.title));
-  } else if (sort === "author") {
-    filteredBooks.sort((a, b) => a.author.localeCompare(b.author));
-  } else {
-    filteredBooks.sort(
-      (a, b) =>
-        new Date(b.createdAt || 0).getTime() -
-        new Date(a.createdAt || 0).getTime()
-    );
+    params.set("page", String(pageNumber));
+
+    return `/books?${params.toString()}`;
   }
 
   return (
     <div className="min-h-screen bg-[#F6F3EB]">
-      {/* Hero */}
       <section className="bg-[#173D32] px-5 py-20 md:px-8 md:py-28">
         <div className="mx-auto max-w-7xl">
           <p className="mb-5 text-xs font-semibold tracking-[0.25em] text-[#C49A62]">
@@ -111,9 +138,7 @@ export default async function BooksPage({
         </div>
       </section>
 
-      {/* Books */}
       <section className="mx-auto max-w-7xl px-5 py-16 md:px-8">
-        {/* Filters */}
         <form
           action="/books"
           method="GET"
@@ -129,7 +154,7 @@ export default async function BooksPage({
               <input
                 type="search"
                 name="q"
-                defaultValue={params.q || ""}
+                defaultValue={query}
                 placeholder="Search by book title or author..."
                 className="h-12 w-full rounded-lg border border-[#DED9CD] bg-[#F6F3EB] pl-12 pr-4 text-sm text-[#26332D] outline-none focus:border-[#173D32]"
               />
@@ -186,7 +211,6 @@ export default async function BooksPage({
           </div>
         </form>
 
-        {/* Results */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold tracking-[0.2em] text-[#A47B48]">
@@ -201,13 +225,16 @@ export default async function BooksPage({
           <p className="text-sm text-[#777D74]">
             Showing{" "}
             <span className="font-semibold text-[#173D32]">
-              {filteredBooks.length}
+              {books.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-semibold text-[#173D32]">
+              {totalBooks}
             </span>{" "}
             books
           </p>
         </div>
 
-        {/* API Error */}
         {loadingError ? (
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] px-6 py-20 text-center">
             <BookOpen
@@ -221,7 +248,7 @@ export default async function BooksPage({
             </h3>
 
             <p className="mt-3 text-sm text-[#777D74]">
-              Please check that your backend server is running and try again.
+              Please check the connection and try again.
             </p>
 
             <Link
@@ -231,71 +258,122 @@ export default async function BooksPage({
               Try Again
             </Link>
           </div>
-        ) : filteredBooks.length > 0 ? (
-          /* Book Grid */
-          <div className="grid grid-cols-1 gap-x-7 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredBooks.map((book) => (
-              <article key={book._id} className="group">
-                <Link
-                  href={`/books/${book._id}`}
-                  className="relative block overflow-hidden rounded-xl bg-[#E8E2D6]"
-                >
-                  <div className="relative aspect-[4/3] w-full">
-                    {book.image ? (
-                      <img
-                        src={book.image}
-                        alt={book.title}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <BookOpen
-                          size={48}
-                          strokeWidth={1.2}
-                          className="text-[#A49B8C]"
+        ) : books.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 gap-x-7 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+              {books.map((book) => (
+                <article key={book._id} className="group">
+                  <Link
+                    href={`/books/${book._id}`}
+                    className="relative block overflow-hidden rounded-xl bg-[#E8E2D6]"
+                  >
+                    <div className="relative aspect-[4/3] w-full">
+                      {book.image ? (
+                        <img
+                          src={book.image}
+                          alt={book.title}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <BookOpen
+                            size={48}
+                            strokeWidth={1.2}
+                            className="text-[#A49B8C]"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="absolute left-4 top-4 rounded-full bg-[#F6F3EB]/95 px-4 py-2 text-[10px] font-semibold tracking-wider text-[#173D32]">
+                      {book.category?.toUpperCase()}
+                    </span>
+                  </Link>
+
+                  <div className="mt-5 flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-heading text-xl font-semibold text-[#173D32] transition-colors group-hover:text-[#A47B48]">
+                        {book.title}
+                      </h3>
+
+                      <p className="mt-2 text-sm text-[#777D74]">
+                        by {book.author}
+                      </p>
+
+                      <p className="mt-2 text-xs text-[#777D74]">
+                        Available copies: {book.availableCopies ?? "—"}
+                      </p>
+                    </div>
+
+                    <BookOpen
+                      size={19}
+                      className="mt-1 shrink-0 text-[#C49A62]"
+                    />
                   </div>
 
-                  <span className="absolute left-4 top-4 rounded-full bg-[#F6F3EB]/95 px-4 py-2 text-[10px] font-semibold tracking-wider text-[#173D32]">
-                    {book.category?.toUpperCase()}
-                  </span>
+                  <Link
+                    href={`/books/${book._id}`}
+                    className="mt-5 inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-[#173D32] transition-colors hover:text-[#A47B48]"
+                  >
+                    VIEW DETAILS
+                    <ArrowRight size={15} />
+                  </Link>
+
+                  <div className="mt-5 border-b border-[#DED9CD]" />
+                </article>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-16 flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  href={getPageUrl(currentPage - 1)}
+                  aria-disabled={currentPage === 1}
+                  className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition ${
+                    currentPage === 1
+                      ? "pointer-events-none border-[#DED9CD] text-[#B8B2A7] opacity-50"
+                      : "border-[#DED9CD] bg-[#FFFEFA] text-[#173D32] hover:bg-[#173D32] hover:text-white"
+                  }`}
+                >
+                  <ChevronLeft size={16} />
+                  Previous
                 </Link>
 
-                <div className="mt-5 flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-heading text-xl font-semibold text-[#173D32] transition-colors group-hover:text-[#A47B48]">
-                      {book.title}
-                    </h3>
-
-                    <p className="mt-2 text-sm text-[#777D74]">
-                      by {book.author}
-                    </p>
-
-                    <p className="mt-2 text-xs text-[#777D74]">
-                      Available copies: {book.availableCopies ?? "—"}
-                    </p>
-                  </div>
-
-                  <BookOpen
-                    size={19}
-                    className="mt-1 shrink-0 text-[#C49A62]"
-                  />
-                </div>
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                  (pageNumber) => (
+                    <Link
+                      key={pageNumber}
+                      href={getPageUrl(pageNumber)}
+                      className={`flex h-11 min-w-11 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition ${
+                        currentPage === pageNumber
+                          ? "border-[#173D32] bg-[#173D32] text-white"
+                          : "border-[#DED9CD] bg-[#FFFEFA] text-[#173D32] hover:border-[#173D32]"
+                      }`}
+                    >
+                      {pageNumber}
+                    </Link>
+                  )
+                )}
 
                 <Link
-                  href={`/books/${book._id}`}
-                  className="mt-5 inline-flex items-center gap-2 text-xs font-semibold tracking-wider text-[#173D32] transition-colors hover:text-[#A47B48]"
+                  href={getPageUrl(currentPage + 1)}
+                  aria-disabled={currentPage === totalPages}
+                  className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition ${
+                    currentPage === totalPages
+                      ? "pointer-events-none border-[#DED9CD] text-[#B8B2A7] opacity-50"
+                      : "border-[#DED9CD] bg-[#FFFEFA] text-[#173D32] hover:bg-[#173D32] hover:text-white"
+                  }`}
                 >
-                  VIEW DETAILS
-                  <ArrowRight size={15} />
+                  Next
+                  <ChevronRight size={16} />
                 </Link>
+              </div>
+            )}
 
-                <div className="mt-5 border-b border-[#DED9CD]" />
-              </article>
-            ))}
-          </div>
+            <p className="mt-5 text-center text-xs text-[#777D74]">
+              Page {currentPage} of {totalPages}
+            </p>
+          </>
         ) : (
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] px-6 py-20 text-center">
             <BookOpen
@@ -309,7 +387,7 @@ export default async function BooksPage({
             </h3>
 
             <p className="mt-3 text-sm text-[#777D74]">
-              {books.length === 0
+              {totalBooks === 0
                 ? "Our library is waiting for its first books."
                 : "Try another search term or choose a different category."}
             </p>

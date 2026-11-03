@@ -7,19 +7,107 @@ const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
 
 // GET: Get all books (Public)
+// Example: /books?page=1&limit=6&q=money&category=Fiction&sort=newest
 router.get("/", async (req, res) => {
   try {
     const db = getDB();
+    const collection = db.collection("books");
 
-    const books = await db.collection("books")
-      .find()
-      .sort({ createdAt: -1 })
+    const { page, limit, q, category, sort } = req.query;
+
+    // Keep the old response format for existing API requests.
+    if (
+      page === undefined &&
+      limit === undefined &&
+      q === undefined &&
+      category === undefined &&
+      sort === undefined
+    ) {
+      const books = await collection
+        .find()
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      return res.json(books);
+    }
+
+    const currentPage = Number(page || 1);
+    const pageLimit = Number(limit || 6);
+
+    if (
+      !Number.isInteger(currentPage) ||
+      currentPage < 1 ||
+      !Number.isInteger(pageLimit) ||
+      pageLimit < 1 ||
+      pageLimit > 100
+    ) {
+      return res.status(400).json({
+        message: "Invalid page or limit value",
+      });
+    }
+
+    // Build MongoDB filter
+    const filter = {};
+
+    // Search by book title or author
+    const searchQuery = String(q || "").trim();
+
+    if (searchQuery) {
+      const escapedQuery = searchQuery.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      const searchRegex = new RegExp(escapedQuery, "i");
+
+      filter.$or = [
+        { title: searchRegex },
+        { author: searchRegex },
+      ];
+    }
+
+    // Filter by category
+    if (category && category !== "All") {
+      filter.category = category;
+    }
+
+    // Sorting
+    const sortOptions = {
+      newest: { createdAt: -1 },
+      title: { title: 1 },
+      author: { author: 1 },
+    };
+
+    const selectedSort = sortOptions[sort] || sortOptions.newest;
+
+    // Count filtered books
+    const totalBooks = await collection.countDocuments(filter);
+
+    const totalPages = Math.ceil(totalBooks / pageLimit);
+    const skip = (currentPage - 1) * pageLimit;
+
+    // Fetch only the requested page
+    const books = await collection
+      .find(filter)
+      .collation({ locale: "en", strength: 2 })
+      .sort(selectedSort)
+      .skip(skip)
+      .limit(pageLimit)
       .toArray();
 
-    res.json(books);
+    res.json({
+      books,
+      totalBooks,
+      totalPages,
+      currentPage,
+      limit: pageLimit,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to fetch books" });
+    console.error("GET BOOKS ERROR:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch books",
+    });
   }
 });
 
@@ -54,7 +142,10 @@ router.post("/", verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to add book" });
+
+    res.status(500).json({
+      message: "Failed to add book",
+    });
   }
 });
 
@@ -64,7 +155,9 @@ router.get("/:id", async (req, res) => {
     const db = getDB();
 
     if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid book ID" });
+      return res.status(400).json({
+        message: "Invalid book ID",
+      });
     }
 
     const book = await db.collection("books").findOne({
@@ -72,13 +165,18 @@ router.get("/:id", async (req, res) => {
     });
 
     if (!book) {
-      return res.status(404).json({ message: "Book not found" });
+      return res.status(404).json({
+        message: "Book not found",
+      });
     }
 
     res.json(book);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to fetch book" });
+
+    res.status(500).json({
+      message: "Failed to fetch book",
+    });
   }
 });
 
@@ -88,7 +186,9 @@ router.patch("/:id", verifyToken, async (req, res) => {
     const db = getDB();
 
     if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid book ID" });
+      return res.status(400).json({
+        message: "Invalid book ID",
+      });
     }
 
     const bookId = new ObjectId(req.params.id);
@@ -98,7 +198,9 @@ router.patch("/:id", verifyToken, async (req, res) => {
     });
 
     if (!book) {
-      return res.status(404).json({ message: "Book not found" });
+      return res.status(404).json({
+        message: "Book not found",
+      });
     }
 
     if (book.ownerId !== req.user.id) {
@@ -118,7 +220,10 @@ router.patch("/:id", verifyToken, async (req, res) => {
     if (updates.totalCopies !== undefined) {
       updates.totalCopies = Number(updates.totalCopies);
 
-      if (!Number.isInteger(updates.totalCopies) || updates.totalCopies < 1) {
+      if (
+        !Number.isInteger(updates.totalCopies) ||
+        updates.totalCopies < 1
+      ) {
         return res.status(400).json({
           message: "Total copies must be a positive number",
         });
@@ -144,10 +249,15 @@ router.patch("/:id", verifyToken, async (req, res) => {
       { $set: updates }
     );
 
-    res.json({ message: "Book updated successfully!" });
+    res.json({
+      message: "Book updated successfully!",
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to update book" });
+
+    res.status(500).json({
+      message: "Failed to update book",
+    });
   }
 });
 
@@ -157,7 +267,9 @@ router.delete("/:id", verifyToken, async (req, res) => {
     const db = getDB();
 
     if (!ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid book ID" });
+      return res.status(400).json({
+        message: "Invalid book ID",
+      });
     }
 
     const bookId = new ObjectId(req.params.id);
@@ -190,10 +302,15 @@ router.delete("/:id", verifyToken, async (req, res) => {
       ownerId: req.user.id,
     });
 
-    res.json({ message: "Book deleted successfully!" });
+    res.json({
+      message: "Book deleted successfully!",
+    });
   } catch (error) {
     console.error("DELETE BOOK ERROR:", error);
-    res.status(500).json({ message: "Failed to delete book" });
+
+    res.status(500).json({
+      message: "Failed to delete book",
+    });
   }
 });
 

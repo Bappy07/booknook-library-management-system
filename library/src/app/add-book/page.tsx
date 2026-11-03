@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 import {
   BookPlus,
   ImagePlus,
@@ -55,7 +55,6 @@ export default function AddBookPage() {
     try {
       setIsSubmitting(true);
 
-      // Get JWT token from Better Auth
       const { data, error } = await authClient.token();
 
       if (error || !data?.token) {
@@ -64,11 +63,9 @@ export default function AddBookPage() {
         );
       }
 
-      // Send book data to Express backend
-      const response = await fetch("http://localhost:5000/books", {
+      await apiRequest("/books", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${data.token}`,
         },
         body: JSON.stringify({
@@ -81,12 +78,6 @@ export default function AddBookPage() {
         }),
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to add book.");
-      }
-
       toast.success("Book added successfully!");
 
       form.reset();
@@ -94,9 +85,7 @@ export default function AddBookPage() {
       setImageError(false);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong."
+        error instanceof Error ? error.message : "Something went wrong."
       );
     } finally {
       setIsSubmitting(false);
@@ -119,7 +108,6 @@ export default function AddBookPage() {
           Back to Home
         </Link>
 
-        {/* Heading */}
         <div className="mb-10">
           <p className="text-xs font-semibold tracking-[0.25em] text-[#C49A62]">
             SHARE A STORY
@@ -136,7 +124,6 @@ export default function AddBookPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Book Information */}
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] p-6 shadow-sm md:p-9">
             <div className="mb-7 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8E2D6] text-[#173D32]">
@@ -226,7 +213,6 @@ export default function AddBookPage() {
             </div>
           </div>
 
-          {/* Book Cover */}
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] p-6 shadow-sm md:p-9">
             <div className="mb-7 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8E2D6] text-[#173D32]">
@@ -293,7 +279,6 @@ export default function AddBookPage() {
             </div>
           </div>
 
-          {/* Description */}
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] p-6 shadow-sm md:p-9">
             <h2 className="font-heading text-xl font-semibold text-[#173D32]">
               Book Description
@@ -314,7 +299,6 @@ export default function AddBookPage() {
             />
           </div>
 
-          {/* Contributor Information */}
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] p-6 shadow-sm md:p-9">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E8E2D6] text-[#173D32]">
@@ -353,7 +337,6 @@ export default function AddBookPage() {
             </p>
           </div>
 
-          {/* Buttons */}
           <div className="flex flex-col gap-4 sm:flex-row">
             <button
               type="submit"

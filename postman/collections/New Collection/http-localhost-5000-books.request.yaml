@@ -1,15 +1,6 @@
 $kind: http-request
-name: http://localhost:5000/books
+name: Get Book Details
 description: ""
-url: http://localhost:5000/books/6ae9707b815d26b38ff43eb0
+url: https://booknook-api-puk1.onrender.com/books/6ae9707b815d26b38ff43eb0
 method: GET
-body:
-  type: json
-  content: "{\r
-
-    \  \"title\": \"The Alchemist - Updated\",\r
-
-    \  \"totalCopies\": 8\r
-
-    }"
 order: 1000

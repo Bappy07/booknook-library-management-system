@@ -14,7 +14,7 @@ type Book = {
 async function getBooks(): Promise<Book[]> {
   try {
     const data = await apiRequest("/books", {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     const books: Book[] = Array.isArray(data)

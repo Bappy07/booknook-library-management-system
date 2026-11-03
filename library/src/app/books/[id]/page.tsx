@@ -39,7 +39,7 @@ async function getBook(id: string): Promise<Book | null> {
       return null;
     }
 
-    throw new Error("Failed to load book details.");
+    throw error;
   }
 }
 

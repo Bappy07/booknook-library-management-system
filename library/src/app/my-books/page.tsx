@@ -69,6 +69,7 @@ export default function MyBooksPage() {
     if (isPending) return;
 
     if (!session) {
+      setBooks([]);
       setLoading(false);
       return;
     }
@@ -76,28 +77,56 @@ export default function MyBooksPage() {
     loadBooks();
   }, [session, isPending, loadBooks]);
 
+  async function getAuthToken(): Promise<string> {
+    const { data, error } = await authClient.token();
+
+    if (error || !data?.token) {
+      throw new Error(
+        error?.message || "Please login again."
+      );
+    }
+
+    return data.token;
+  }
+
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!editingBook) return;
 
-    const borrowedCopies =
-      editingBook.totalCopies -
-      (books.find((book) => book._id === editingBook._id)?.availableCopies ?? 0);
+    const originalBook = books.find(
+      (book) => book._id === editingBook._id
+    );
 
-    if (editingBook.totalCopies < 1) {
-      toast.error("Total copies must be at least 1.");
+    if (!originalBook) {
+      toast.error("Book not found. Please refresh the page.");
       return;
     }
 
-    if (editingBook.totalCopies < borrowedCopies) {
+    const borrowedCopies =
+      originalBook.totalCopies - originalBook.availableCopies;
+
+    const newTotalCopies = Number(editingBook.totalCopies);
+
+    if (
+      !Number.isInteger(newTotalCopies) ||
+      newTotalCopies < 1
+    ) {
+      toast.error("Total copies must be a positive whole number.");
+      return;
+    }
+
+    if (newTotalCopies < borrowedCopies) {
       toast.error(
         `At least ${borrowedCopies} copies are already borrowed.`
       );
       return;
     }
 
-    if (!editingBook.title.trim() || !editingBook.author.trim()) {
+    if (
+      !editingBook.title.trim() ||
+      !editingBook.author.trim()
+    ) {
       toast.error("Please enter the book title and author.");
       return;
     }
@@ -105,12 +134,7 @@ export default function MyBooksPage() {
     try {
       setIsSaving(true);
 
-      const tokenResult = await authClient.token();
-      const token = tokenResult.data?.token;
-
-      if (!token) {
-        throw new Error("Please login again.");
-      }
+      const token = await getAuthToken();
 
       await apiRequest(`/books/${editingBook._id}`, {
         method: "PATCH",
@@ -121,11 +145,12 @@ export default function MyBooksPage() {
           title: editingBook.title.trim(),
           author: editingBook.author.trim(),
           category: editingBook.category,
-          totalCopies: editingBook.totalCopies,
+          totalCopies: newTotalCopies,
         }),
       });
 
       toast.success("Book updated successfully!");
+
       setEditingBook(null);
       await loadBooks();
     } catch (error) {
@@ -143,12 +168,7 @@ export default function MyBooksPage() {
     try {
       setIsDeleting(true);
 
-      const tokenResult = await authClient.token();
-      const token = tokenResult.data?.token;
-
-      if (!token) {
-        throw new Error("Please login again.");
-      }
+      const token = await getAuthToken();
 
       await apiRequest(`/books/${deletingBook._id}`, {
         method: "DELETE",
@@ -158,10 +178,13 @@ export default function MyBooksPage() {
       });
 
       setBooks((currentBooks) =>
-        currentBooks.filter((book) => book._id !== deletingBook._id)
+        currentBooks.filter(
+          (book) => book._id !== deletingBook._id
+        )
       );
 
       setDeletingBook(null);
+
       toast.success("Book deleted successfully!");
     } catch (error) {
       toast.error(
@@ -179,6 +202,7 @@ export default function MyBooksPage() {
           size={40}
           className="mx-auto animate-pulse text-[#C49A62]"
         />
+
         <p className="mt-5 text-sm text-[#777D74]">
           Loading your collection...
         </p>
@@ -190,12 +214,15 @@ export default function MyBooksPage() {
     return (
       <section className="mx-auto max-w-7xl px-5 py-24 text-center md:px-8">
         <BookOpen size={42} className="mx-auto text-[#C49A62]" />
+
         <h1 className="mt-5 font-heading text-3xl font-semibold text-[#173D32]">
           Login Required
         </h1>
+
         <p className="mt-3 text-sm text-[#777D74]">
           Please login to manage your books.
         </p>
+
         <Link
           href="/login"
           className="mt-7 inline-block rounded-lg bg-[#173D32] px-6 py-3 text-sm font-semibold text-white"
@@ -208,7 +235,6 @@ export default function MyBooksPage() {
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-16 md:px-8">
-      {/* Heading */}
       <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
         <div>
           <p className="text-sm font-semibold uppercase tracking-widest text-[#A47B48]">
@@ -232,7 +258,6 @@ export default function MyBooksPage() {
         </Link>
       </div>
 
-      {/* Book List / Empty State */}
       {books.length === 0 ? (
         <div className="rounded-xl border border-[#DED9CD] bg-[#FFFEFA] px-6 py-16 text-center">
           <BookOpen
@@ -263,7 +288,6 @@ export default function MyBooksPage() {
               key={book._id}
               className="flex flex-col gap-5 rounded-xl border border-[#DED9CD] bg-[#FFFEFA] p-5 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center"
             >
-              {/* Book Cover */}
               <div className="flex h-40 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#E8E2D6] sm:h-36 sm:w-28">
                 {book.image ? (
                   <img
@@ -276,7 +300,6 @@ export default function MyBooksPage() {
                 )}
               </div>
 
-              {/* Book Information */}
               <div className="min-w-0 flex-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#A47B48]">
                   {book.category}
@@ -314,7 +337,6 @@ export default function MyBooksPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 sm:flex-col">
                 <button
                   onClick={() => setEditingBook({ ...book })}
@@ -337,7 +359,6 @@ export default function MyBooksPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
       {editingBook && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
@@ -364,7 +385,6 @@ export default function MyBooksPage() {
               </button>
             </div>
 
-            {/* Title */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#26332D]">
                 Book Title
@@ -383,7 +403,6 @@ export default function MyBooksPage() {
               />
             </div>
 
-            {/* Author */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#26332D]">
                 Author Name
@@ -402,7 +421,6 @@ export default function MyBooksPage() {
               />
             </div>
 
-            {/* Category */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#26332D]">
                 Category
@@ -426,7 +444,6 @@ export default function MyBooksPage() {
               </select>
             </div>
 
-            {/* Total Copies */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#26332D]">
                 Total Copies
@@ -436,10 +453,8 @@ export default function MyBooksPage() {
                 type="number"
                 min={
                   books.find((book) => book._id === editingBook._id)
-                    ? books.find((book) => book._id === editingBook._id)!
-                        .totalCopies -
-                      books.find((book) => book._id === editingBook._id)!
-                        .availableCopies
+                    ? books.find((book) => book._id === editingBook._id)!.totalCopies -
+                      books.find((book) => book._id === editingBook._id)!.availableCopies
                     : 1
                 }
                 value={editingBook.totalCopies}
@@ -455,15 +470,19 @@ export default function MyBooksPage() {
 
               <p className="mt-2 text-xs text-[#777D74]">
                 Already borrowed:{" "}
-                {books.find((book) => book._id === editingBook._id)!
-                  .totalCopies -
-                  books.find((book) => book._id === editingBook._id)!
-                    .availableCopies}{" "}
+                {(() => {
+                  const originalBook = books.find(
+                    (book) => book._id === editingBook._id
+                  );
+
+                  return originalBook
+                    ? originalBook.totalCopies - originalBook.availableCopies
+                    : 0;
+                })()}{" "}
                 copies.
               </p>
             </div>
 
-            {/* Modal Actions */}
             <div className="flex flex-col-reverse gap-3 border-t border-[#DED9CD] pt-5 sm:flex-row sm:justify-end">
               <button
                 type="button"
@@ -486,7 +505,6 @@ export default function MyBooksPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deletingBook && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"

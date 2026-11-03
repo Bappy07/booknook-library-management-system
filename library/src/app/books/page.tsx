@@ -326,24 +326,29 @@ export default async function BooksPage({
 
             {totalPages > 1 && (
               <div className="mt-16 flex flex-wrap items-center justify-center gap-2">
-                <Link
-                  href={getPageUrl(currentPage - 1)}
-                  aria-disabled={currentPage === 1}
-                  className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition ${
-                    currentPage === 1
-                      ? "pointer-events-none border-[#DED9CD] text-[#B8B2A7] opacity-50"
-                      : "border-[#DED9CD] bg-[#FFFEFA] text-[#173D32] hover:bg-[#173D32] hover:text-white"
-                  }`}
-                >
-                  <ChevronLeft size={16} />
-                  Previous
-                </Link>
+                {currentPage > 1 ? (
+                  <Link
+                    href={getPageUrl(currentPage - 1)}
+                    className="flex items-center gap-2 rounded-lg border border-[#DED9CD] bg-[#FFFEFA] px-4 py-3 text-sm font-medium text-[#173D32] transition hover:bg-[#173D32] hover:text-white"
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="flex cursor-not-allowed items-center gap-2 rounded-lg border border-[#DED9CD] px-4 py-3 text-sm font-medium text-[#B8B2A7] opacity-50">
+                    <ChevronLeft size={16} />
+                    Previous
+                  </span>
+                )}
 
                 {Array.from({ length: totalPages }, (_, index) => index + 1).map(
                   (pageNumber) => (
                     <Link
                       key={pageNumber}
                       href={getPageUrl(pageNumber)}
+                      aria-current={
+                        currentPage === pageNumber ? "page" : undefined
+                      }
                       className={`flex h-11 min-w-11 items-center justify-center rounded-lg border px-3 text-sm font-semibold transition ${
                         currentPage === pageNumber
                           ? "border-[#173D32] bg-[#173D32] text-white"
@@ -355,24 +360,28 @@ export default async function BooksPage({
                   )
                 )}
 
-                <Link
-                  href={getPageUrl(currentPage + 1)}
-                  aria-disabled={currentPage === totalPages}
-                  className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition ${
-                    currentPage === totalPages
-                      ? "pointer-events-none border-[#DED9CD] text-[#B8B2A7] opacity-50"
-                      : "border-[#DED9CD] bg-[#FFFEFA] text-[#173D32] hover:bg-[#173D32] hover:text-white"
-                  }`}
-                >
-                  Next
-                  <ChevronRight size={16} />
-                </Link>
+                {currentPage < totalPages ? (
+                  <Link
+                    href={getPageUrl(currentPage + 1)}
+                    className="flex items-center gap-2 rounded-lg border border-[#DED9CD] bg-[#FFFEFA] px-4 py-3 text-sm font-medium text-[#173D32] transition hover:bg-[#173D32] hover:text-white"
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </Link>
+                ) : (
+                  <span className="flex cursor-not-allowed items-center gap-2 rounded-lg border border-[#DED9CD] px-4 py-3 text-sm font-medium text-[#B8B2A7] opacity-50">
+                    Next
+                    <ChevronRight size={16} />
+                  </span>
+                )}
               </div>
             )}
 
-            <p className="mt-5 text-center text-xs text-[#777D74]">
-              Page {currentPage} of {totalPages}
-            </p>
+            {totalPages > 0 && (
+              <p className="mt-5 text-center text-xs text-[#777D74]">
+                Page {currentPage} of {totalPages}
+              </p>
+            )}
           </>
         ) : (
           <div className="rounded-2xl border border-[#DED9CD] bg-[#FFFEFA] px-6 py-20 text-center">

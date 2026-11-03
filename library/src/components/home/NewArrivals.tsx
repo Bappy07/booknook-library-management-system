@@ -127,9 +127,11 @@ export default async function NewArrivals() {
               strokeWidth={1.3}
               className="mx-auto text-[#C49A62]"
             />
+
             <h3 className="mt-5 font-heading text-2xl font-semibold text-[#173D32]">
               No books available yet
             </h3>
+
             <p className="mt-3 text-sm text-[#777D74]">
               Add your first book to see it here.
             </p>

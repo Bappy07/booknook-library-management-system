@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
+import { apiRequest } from "@/lib/api";
 
 type Book = {
   _id: string;
@@ -12,15 +13,9 @@ type Book = {
 
 async function getBooks(): Promise<Book[]> {
   try {
-    const response = await fetch("http://localhost:5000/books", {
+    const data = await apiRequest("/books", {
       cache: "no-store",
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch books");
-    }
-
-    const data = await response.json();
 
     const books: Book[] = Array.isArray(data)
       ? data
